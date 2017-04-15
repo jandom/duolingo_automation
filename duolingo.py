@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -8,6 +11,14 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from translations import translations
 import os, sys
+
+import pandas as pd
+df = pd.read_csv("Untitled.csv")
+df = df[["Unnamed: 1", "Unnamed: 2"]]
+df.columns = ["danish", "english"]
+df = df[~df.english.isin([" "])]
+df.danish = df.danish.map(lambda x: str(x).decode('utf-8').strip())
+df.english = df.english.map(lambda x: str(x).decode('utf-8').strip())
 
 #setup
 
@@ -24,26 +35,28 @@ driver = webdriver.Chrome(chromedriver)
 
 #login
 driver.get("https://tinycards.duolingo.com")
-driver.find_element_by_class_name("_2A2uR").click()
-driver.find_element_by_class_name("_2a16Y").send_keys(username)
-driver.find_element_by_class_name("_3FjlE").send_keys(password,Keys.RETURN)
+driver.find_element_by_css_selector("._2A2uR").click()
+driver.find_element_by_css_selector("._2a16Y").send_keys(username)
+driver.find_element_by_css_selector("._3FjlE").send_keys(password,Keys.RETURN)
 WebDriverWait(driver, 10, 0.05).until(EC.presence_of_element_located((By.XPATH, "//a[@href='/profile']")))
 
 driver.get(url)
 
 try:
 	WebDriverWait(driver, 10, 0.05).until(EC.presence_of_element_located((By.CLASS_NAME, "_3rQ1C")))
-	driver.find_element_by_class_name("_3rQ1C").click()
 
-	cards = driver.find_elements_by_css_selector("._2qbTM")
-	print(len(cards))
-	for card in cards[-1:]:
-		left, right = card.find_elements_by_css_selector("textarea")
-		left.send_keys("foo")
-		right.send_keys("bar")
+	for index, row in df.iterrows():
 
- 	
+		driver.find_element_by_css_selector("._3rQ1C").click()
+		cards = driver.find_elements_by_css_selector("._2qbTM")
+		print(len(cards))
 
+		last_card = cards[-1]
+		left, right = last_card.find_elements_by_css_selector("textarea")
+		left.send_keys(row['danish'])
+		right.send_keys(row['english'])
+
+	driver.find_element_by_css_selector("._3q0ut").click()
 
 except Exception as e:
 	print e
